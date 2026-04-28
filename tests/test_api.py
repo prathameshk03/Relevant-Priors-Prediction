@@ -7,23 +7,9 @@ from fastapi.testclient import TestClient
 import api
 
 
-class FakeEncoder:
-    def __init__(self) -> None:
-        self.encoded_sentences: list[list[str]] = []
-
-    def encode(self, sentences, batch_size=64, show_progress_bar=False):
-        self.encoded_sentences.append(list(sentences))
-        return [[float(len(sentence)), 1.0] for sentence in sentences]
-
-
 class ApiTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.encoder = FakeEncoder()
-        api._encoder = self.encoder
         self.client = TestClient(api.app)
-
-    def tearDown(self) -> None:
-        api._encoder = None
 
     def test_health(self) -> None:
         response = self.client.get("/health")
@@ -47,7 +33,6 @@ class ApiTests(unittest.TestCase):
                             "study_description": "XR chest",
                             "study_date": "2023-01-01",
                         },
-                        None,
                         {
                             "study_id": "prior-2",
                             "study_description": "MRI brain",
@@ -57,6 +42,11 @@ class ApiTests(unittest.TestCase):
                 },
                 {
                     "case_id": "case-2",
+                    "current_study": {
+                        "study_id": "current-2",
+                        "study_description": "CT abdomen",
+                        "study_date": "2024-01-01",
+                    },
                     "prior_studies": [
                         {
                             "study_id": "prior-3",
@@ -73,7 +63,7 @@ class ApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(set(body), {"predictions"})
-        self.assertEqual(len(body["predictions"]), 2)
+        self.assertEqual(len(body["predictions"]), 3)
         self.assertEqual(
             set(body["predictions"][0]),
             {"case_id", "study_id", "predicted_is_relevant"},
@@ -86,36 +76,41 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"predictions": []})
 
-    def test_predict_encodes_unique_descriptions_once_per_request(self) -> None:
-        payload = {
-            "cases": [
-                {
-                    "case_id": "case-1",
-                    "current_study": {
-                        "study_id": "current-1",
-                        "study_description": "CT chest",
-                        "study_date": "2024-01-01",
-                    },
-                    "prior_studies": [
-                        {
-                            "study_id": "prior-1",
+    def test_predict_rejects_non_list_cases(self) -> None:
+        response = self.client.post("/predict", json={"cases": "bad"})
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("cases", response.json()["detail"])
+
+    def test_predict_rejects_missing_current_study(self) -> None:
+        response = self.client.post(
+            "/predict",
+            json={"cases": [{"case_id": "case-1", "prior_studies": []}]},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("current_study", response.json()["detail"])
+
+    def test_predict_rejects_invalid_prior_instead_of_skipping(self) -> None:
+        response = self.client.post(
+            "/predict",
+            json={
+                "cases": [
+                    {
+                        "case_id": "case-1",
+                        "current_study": {
+                            "study_id": "current-1",
                             "study_description": "CT chest",
-                            "study_date": "2023-01-01",
+                            "study_date": "2024-01-01",
                         },
-                        {
-                            "study_id": "prior-2",
-                            "study_description": "XR ankle",
-                            "study_date": "2022-01-01",
-                        },
-                    ],
-                }
-            ]
-        }
+                        "prior_studies": [None],
+                    }
+                ]
+            },
+        )
 
-        response = self.client.post("/predict", json=payload)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(self.encoder.encoded_sentences, [["CT chest", "XR ankle"]])
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("prior", response.json()["detail"])
 
 
 if __name__ == "__main__":

@@ -8,13 +8,11 @@ from .features import extract_body_part, extract_modality, keyword_overlap_score
 
 
 THRESHOLD = 0.50
-HIGH_CONFIDENCE_EMBEDDING_THRESHOLD = 0.85
 
 
 def score_pair(
     current_study: dict[str, Any],
     prior_study: dict[str, Any],
-    embedding_similarity: float = 0.0,
 ) -> float:
     """Score how relevant a prior study is to a current study."""
     current_description = current_study.get("study_description")
@@ -41,25 +39,17 @@ def score_pair(
     keyword_overlap = keyword_overlap_score(current_description, prior_description)
 
     score = (
-        0.40 * body_part_match
-        + 0.10 * modality_match
-        + 0.10 * recency
-        + 0.10 * keyword_overlap
-        + 0.30 * _clamp_similarity(embedding_similarity)
+        0.45 * body_part_match
+        + 0.20 * modality_match
+        + 0.20 * recency
+        + 0.15 * keyword_overlap
     )
-    if embedding_similarity >= HIGH_CONFIDENCE_EMBEDDING_THRESHOLD and body_part_match == 1:
-        score += 0.1
     return score
 
 
 def predict_pair(
     current_study: dict[str, Any],
     prior_study: dict[str, Any],
-    embedding_similarity: float = 0.0,
 ) -> bool:
     """Predict whether a prior study is relevant to the current study."""
-    return score_pair(current_study, prior_study, embedding_similarity) >= THRESHOLD
-
-
-def _clamp_similarity(value: float) -> float:
-    return min(1.0, max(0.0, value))
+    return score_pair(current_study, prior_study) >= THRESHOLD

@@ -2,28 +2,12 @@
 
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
-from src.embeddings import EmbeddingCache, Encoder, collect_descriptions, load_sentence_transformer
 from src.model import predict_pair
 
 
 app = FastAPI()
-_encoder: Encoder | None = None
-
-
-def get_encoder() -> Encoder:
-    """Load the embedding model once per process."""
-    global _encoder
-    if _encoder is None:
-        _encoder = load_sentence_transformer()
-    return _encoder
-
-
-@app.on_event("startup")
-def warmup() -> None:
-    print("Loading embedding model...")
-    get_encoder()
 
 
 @app.get("/health")
@@ -32,36 +16,45 @@ def health() -> dict[str, str]:
 
 
 @app.post("/predict")
-def predict(payload: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+def predict(payload: dict[str, Any]) -> dict[str, Any]:
     cases = payload.get("cases") or []
+    if not isinstance(cases, list):
+        raise HTTPException(status_code=400, detail="'cases' must be a list")
+
     print(f"Received {len(cases)} cases")
-
-    unique_descriptions = set(collect_descriptions(cases))
-    print(f"Unique descriptions: {len(unique_descriptions)}")
-
-    embedding_cache = EmbeddingCache(get_encoder())
-    embedding_cache.populate(unique_descriptions)
+    if not cases:
+        return {"predictions": []}
 
     predictions: list[dict[str, Any]] = []
-    for case in cases:
-        if not case:
-            continue
+    for case_index, case in enumerate(cases):
+        if not isinstance(case, dict):
+            raise HTTPException(status_code=400, detail=f"case at index {case_index} must be an object")
 
         case_id = case.get("case_id")
         current = case.get("current_study")
-        priors = case.get("prior_studies") or []
-        if not current:
-            continue
-
-        for prior in priors:
-            if not prior:
-                continue
-
-            embedding_similarity = embedding_cache.similarity(
-                current.get("study_description"),
-                prior.get("study_description"),
+        if not isinstance(current, dict):
+            raise HTTPException(
+                status_code=400,
+                detail=f"case at index {case_index} must include a current_study object",
             )
-            pred = predict_pair(current, prior, embedding_similarity)
+
+        priors = case.get("prior_studies", [])
+        if priors is None:
+            priors = []
+        if not isinstance(priors, list):
+            raise HTTPException(
+                status_code=400,
+                detail=f"case at index {case_index} prior_studies must be a list",
+            )
+
+        for prior_index, prior in enumerate(priors):
+            if not isinstance(prior, dict):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"prior at case index {case_index}, prior index {prior_index} must be an object",
+                )
+
+            pred = predict_pair(current, prior)
             predictions.append(
                 {
                     "case_id": case_id,
