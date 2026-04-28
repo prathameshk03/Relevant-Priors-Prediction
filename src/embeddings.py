@@ -10,7 +10,7 @@ DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 
 class Encoder(Protocol):
-    def encode(self, sentences: Sequence[str], batch_size: int = 64, show_progress_bar: bool = False) -> Any:
+    def encode(self, sentences: Sequence[str], batch_size: int = 16, show_progress_bar: bool = False) -> Any:
         """Encode a batch of sentences into vectors."""
 
 
@@ -25,7 +25,7 @@ class EmbeddingModelLoadError(RuntimeError):
 class EmbeddingCache:
     """In-memory cache keyed by raw study description."""
 
-    def __init__(self, encoder: Encoder, batch_size: int = 64) -> None:
+    def __init__(self, encoder: Encoder, batch_size: int = 16) -> None:
         self.encoder = encoder
         self.batch_size = batch_size
         self._cache: dict[str, list[float]] = {}
