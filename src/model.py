@@ -8,7 +8,6 @@ from .features import extract_body_part, extract_modality, keyword_overlap_score
 
 
 THRESHOLD = 0.50
-HIGH_CONFIDENCE_EMBEDDING_THRESHOLD = 0.85
 
 
 def score_pair(
@@ -41,14 +40,11 @@ def score_pair(
     keyword_overlap = keyword_overlap_score(current_description, prior_description)
 
     score = (
-        0.40 * body_part_match
-        + 0.10 * modality_match
-        + 0.10 * recency
-        + 0.10 * keyword_overlap
-        + 0.30 * _clamp_similarity(embedding_similarity)
+        0.45 * body_part_match
+        + 0.20 * modality_match
+        + 0.20 * recency
+        + 0.15 * keyword_overlap
     )
-    if embedding_similarity >= HIGH_CONFIDENCE_EMBEDDING_THRESHOLD and body_part_match == 1:
-        score += 0.1
     return score
 
 

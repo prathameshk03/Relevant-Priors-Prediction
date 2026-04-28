@@ -4,33 +4,10 @@ from typing import Any
 
 from fastapi import FastAPI
 
-from src.embeddings import DEFAULT_EMBEDDING_MODEL, EmbeddingCache, Encoder, collect_descriptions
 from src.model import predict_pair
 
 
 app = FastAPI()
-_encoder: Encoder | None = None
-
-
-def get_encoder() -> Encoder:
-    """Load the embedding model once per process."""
-    global _encoder
-    if _encoder is None:
-        try:
-            from sentence_transformers import SentenceTransformer
-
-            print("Loading embedding model...")
-            _encoder = SentenceTransformer(DEFAULT_EMBEDDING_MODEL)
-            print("Model loaded")
-        except Exception as exc:
-            print("MODEL LOAD FAILED:", str(exc))
-            raise RuntimeError(str(exc)) from exc
-    return _encoder
-
-
-@app.on_event("startup")
-def warmup() -> None:
-    get_encoder()
 
 
 @app.get("/health")
@@ -45,12 +22,6 @@ def predict(payload: dict[str, Any]) -> dict[str, Any]:
         print(f"Received {len(cases)} cases")
         if not cases:
             return {"predictions": []}
-
-        unique_descriptions = set(collect_descriptions(cases))
-        print(f"Unique descriptions: {len(unique_descriptions)}")
-
-        embedding_cache = EmbeddingCache(get_encoder())
-        embedding_cache.populate(unique_descriptions)
 
         predictions: list[dict[str, Any]] = []
         for case in cases:
@@ -67,11 +38,7 @@ def predict(payload: dict[str, Any]) -> dict[str, Any]:
                 if not prior:
                     continue
 
-                embedding_similarity = embedding_cache.similarity(
-                    current.get("study_description"),
-                    prior.get("study_description"),
-                )
-                pred = predict_pair(current, prior, embedding_similarity)
+                pred = predict_pair(current, prior)
                 predictions.append(
                     {
                         "case_id": case_id,
