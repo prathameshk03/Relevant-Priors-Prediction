@@ -31,6 +31,30 @@ You can also pass another compatible combined challenge JSON file:
 python main.py path/to/challenge.json
 ```
 
+## API
+
+Run the FastAPI prediction service:
+
+```bash
+uvicorn api:app --host 0.0.0.0 --port 8000
+```
+
+Open the interactive docs at `http://localhost:8000/docs`.
+
+`POST /predict` accepts a combined challenge-style JSON body and returns:
+
+```json
+{
+  "predictions": [
+    {
+      "case_id": "...",
+      "study_id": "...",
+      "predicted_is_relevant": true
+    }
+  ]
+}
+```
+
 ## Test
 
 ```bash
