@@ -1,6 +1,6 @@
 # New-Lantern-API-Task
 
-Phase 1 baseline for the Relevant Priors challenge.
+Fast rule-based API for the Relevant Priors challenge.
 
 ## Run
 
@@ -15,9 +15,12 @@ python main.py
 ```
 
 By default, the CLI reads `relevant_priors_public.json`, builds an in-memory
-sentence-transformers embedding cache for unique study descriptions, predicts
-relevance for every prior study in every case, and prints local evaluation metrics
-against the embedded truth labels.
+set of deterministic features for every current/prior study pair, predicts
+relevance, and prints local evaluation metrics against the embedded truth labels.
+
+The shipped model does not load embeddings. It scores each pair using body-part
+match, modality match, recency, and keyword overlap so the API can respond quickly
+on free-tier deployment environments.
 
 ## Data
 
@@ -54,6 +57,9 @@ Open the interactive docs at `http://localhost:8000/docs`.
   ]
 }
 ```
+
+Malformed case objects return HTTP 400 responses instead of being silently
+skipped.
 
 ## Test
 

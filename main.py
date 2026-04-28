@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from src.embeddings import EmbeddingCache, collect_descriptions, load_sentence_transformer
 from src.evaluate import build_truth_map, evaluate_predictions, flatten_cases, format_metrics
 from src.model import predict_pair
 
@@ -21,22 +20,14 @@ def load_challenge_file(path: Path) -> dict[str, Any]:
         return json.load(handle)
 
 
-def predict_cases(cases: list[dict[str, Any]], embedding_cache: EmbeddingCache) -> list[dict[str, Any]]:
+def predict_cases(cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
     predictions = []
     for case_id, current_study, prior_study in flatten_cases(cases):
-        embedding_similarity = embedding_cache.similarity(
-            current_study.get("study_description"),
-            prior_study.get("study_description"),
-        )
         predictions.append(
             {
                 "case_id": case_id,
                 "study_id": str(prior_study["study_id"]),
-                "predicted_is_relevant": predict_pair(
-                    current_study,
-                    prior_study,
-                    embedding_similarity,
-                ),
+                "predicted_is_relevant": predict_pair(current_study, prior_study),
             }
         )
     return predictions
@@ -47,11 +38,7 @@ def run(input_path: Path) -> str:
     cases = payload.get("cases", [])
     truth_rows = payload.get("truth", [])
 
-    encoder = load_sentence_transformer()
-    embedding_cache = EmbeddingCache(encoder)
-    embedding_cache.populate(collect_descriptions(cases))
-
-    predictions = predict_cases(cases, embedding_cache)
+    predictions = predict_cases(cases)
     truth_map = build_truth_map(truth_rows)
     result = evaluate_predictions(predictions, truth_map)
     return format_metrics(result)

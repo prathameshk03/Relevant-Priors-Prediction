@@ -13,7 +13,6 @@ THRESHOLD = 0.50
 def score_pair(
     current_study: dict[str, Any],
     prior_study: dict[str, Any],
-    embedding_similarity: float = 0.0,
 ) -> float:
     """Score how relevant a prior study is to a current study."""
     current_description = current_study.get("study_description")
@@ -51,11 +50,6 @@ def score_pair(
 def predict_pair(
     current_study: dict[str, Any],
     prior_study: dict[str, Any],
-    embedding_similarity: float = 0.0,
 ) -> bool:
     """Predict whether a prior study is relevant to the current study."""
-    return score_pair(current_study, prior_study, embedding_similarity) >= THRESHOLD
-
-
-def _clamp_similarity(value: float) -> float:
-    return min(1.0, max(0.0, value))
+    return score_pair(current_study, prior_study) >= THRESHOLD
