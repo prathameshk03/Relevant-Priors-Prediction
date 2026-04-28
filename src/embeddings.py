@@ -88,10 +88,14 @@ def load_sentence_transformer(model_name: str = DEFAULT_EMBEDDING_MODEL) -> Enco
 def collect_descriptions(cases: Iterable[dict[str, Any]]) -> list[str]:
     descriptions: list[str] = []
     for case in cases:
+        if not case:
+            continue
         current_description = case.get("current_study", {}).get("study_description")
         if current_description:
             descriptions.append(current_description)
         for prior_study in case.get("prior_studies", []):
+            if not prior_study:
+                continue
             prior_description = prior_study.get("study_description")
             if prior_description:
                 descriptions.append(prior_description)
