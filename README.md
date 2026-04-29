@@ -1,4 +1,4 @@
-# New-Lantern-API-Task
+# Relevant-Priors-Prediction-API
 
 Fast rule-based API for the Relevant Priors challenge.
 
