@@ -2,12 +2,40 @@
 
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 
 from src.model import predict_pair
 
 
 app = FastAPI()
+
+
+PREDICT_REQUEST_EXAMPLE = {
+    "cases": [
+        {
+            "case_id": "case-demo-001",
+            "patient_id": "patient-demo-001",
+            "patient_name": "Demo, Taylor",
+            "current_study": {
+                "study_id": "study-current-001",
+                "study_description": "CT chest with contrast",
+                "study_date": "2024-02-15",
+            },
+            "prior_studies": [
+                {
+                    "study_id": "study-prior-001",
+                    "study_description": "XR chest 2 views",
+                    "study_date": "2023-10-20",
+                },
+                {
+                    "study_id": "study-prior-002",
+                    "study_description": "MRI brain without contrast",
+                    "study_date": "2022-06-04",
+                },
+            ],
+        }
+    ]
+}
 
 
 @app.get("/health")
@@ -16,7 +44,7 @@ def health() -> dict[str, str]:
 
 
 @app.post("/predict")
-def predict(payload: dict[str, Any]) -> dict[str, Any]:
+def predict(payload: dict[str, Any] = Body(..., examples=[PREDICT_REQUEST_EXAMPLE])) -> dict[str, Any]:
     cases = payload.get("cases") or []
     if not isinstance(cases, list):
         raise HTTPException(status_code=400, detail="'cases' must be a list")
