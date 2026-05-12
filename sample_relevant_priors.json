@@ -1,0 +1,107 @@
+{
+  "dataset_id": "sample-medical-imaging-priors",
+  "schema_version": "1.0",
+  "split": "sample",
+  "case_count": 3,
+  "truth_count": 6,
+  "cases": [
+    {
+      "case_id": "case-demo-001",
+      "patient_id": "patient-demo-001",
+      "patient_name": "Demo, Taylor",
+      "current_study": {
+        "study_id": "study-current-001",
+        "study_description": "CT chest with contrast",
+        "study_date": "2024-02-15"
+      },
+      "prior_studies": [
+        {
+          "study_id": "study-prior-001",
+          "study_description": "XR chest 2 views",
+          "study_date": "2023-10-20"
+        },
+        {
+          "study_id": "study-prior-002",
+          "study_description": "MRI brain without contrast",
+          "study_date": "2022-06-04"
+        }
+      ]
+    },
+    {
+      "case_id": "case-demo-002",
+      "patient_id": "patient-demo-002",
+      "patient_name": "Demo, Jordan",
+      "current_study": {
+        "study_id": "study-current-002",
+        "study_description": "MRI lumbar spine without contrast",
+        "study_date": "2024-03-01"
+      },
+      "prior_studies": [
+        {
+          "study_id": "study-prior-003",
+          "study_description": "MR lumbar spine",
+          "study_date": "2021-11-18"
+        },
+        {
+          "study_id": "study-prior-004",
+          "study_description": "US abdomen complete",
+          "study_date": "2020-08-09"
+        }
+      ]
+    },
+    {
+      "case_id": "case-demo-003",
+      "patient_id": "patient-demo-003",
+      "patient_name": "Demo, Morgan",
+      "current_study": {
+        "study_id": "study-current-003",
+        "study_description": "Screening mammogram bilateral",
+        "study_date": "2024-01-12"
+      },
+      "prior_studies": [
+        {
+          "study_id": "study-prior-005",
+          "study_description": "Mammography screening bilateral",
+          "study_date": "2023-01-20"
+        },
+        {
+          "study_id": "study-prior-006",
+          "study_description": "CT abdomen pelvis with contrast",
+          "study_date": "2022-09-13"
+        }
+      ]
+    }
+  ],
+  "truth": [
+    {
+      "case_id": "case-demo-001",
+      "study_id": "study-prior-001",
+      "is_relevant_to_current": true
+    },
+    {
+      "case_id": "case-demo-001",
+      "study_id": "study-prior-002",
+      "is_relevant_to_current": false
+    },
+    {
+      "case_id": "case-demo-002",
+      "study_id": "study-prior-003",
+      "is_relevant_to_current": true
+    },
+    {
+      "case_id": "case-demo-002",
+      "study_id": "study-prior-004",
+      "is_relevant_to_current": false
+    },
+    {
+      "case_id": "case-demo-003",
+      "study_id": "study-prior-005",
+      "is_relevant_to_current": true
+    },
+    {
+      "case_id": "case-demo-003",
+      "study_id": "study-prior-006",
+      "is_relevant_to_current": false
+    }
+  ]
+}
