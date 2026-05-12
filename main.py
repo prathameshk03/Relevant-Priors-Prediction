@@ -1,4 +1,4 @@
-"""Run the Phase 1 baseline relevant-priors pipeline."""
+"""Run batch prediction and evaluation for Relevant-Priors-Prediction-API."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from src.model import predict_pair
 DEFAULT_INPUT_PATH = Path("relevant_priors_public.json")
 
 
-def load_challenge_file(path: Path) -> dict[str, Any]:
+def load_dataset_file(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
 
@@ -34,7 +34,7 @@ def predict_cases(cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def run(input_path: Path) -> str:
-    payload = load_challenge_file(input_path)
+    payload = load_dataset_file(input_path)
     cases = payload.get("cases", [])
     truth_rows = payload.get("truth", [])
 
@@ -45,12 +45,12 @@ def run(input_path: Path) -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run the relevant-priors baseline pipeline.")
+    parser = argparse.ArgumentParser(description="Run the Relevant-Priors-Prediction-API pipeline.")
     parser.add_argument(
         "input_path",
         nargs="?",
         default=str(DEFAULT_INPUT_PATH),
-        help="Path to a combined challenge JSON file.",
+        help="Path to a JSON dataset containing cases and optional truth labels.",
     )
     return parser.parse_args()
 

@@ -43,7 +43,7 @@ class PipelineTests(unittest.TestCase):
         expected = 0.45 + (0.20 * 0.5) + 0.20 + (0.15 * (1 / 3))
         self.assertAlmostEqual(score, expected)
 
-    def test_predict_pair_does_not_use_embedding_shortcut(self) -> None:
+    def test_predict_pair_uses_deterministic_feature_scoring(self) -> None:
         self.assertFalse(
             predict_pair(
                 {"study_description": "MRI brain", "study_date": "2024-01-01"},
