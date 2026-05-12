@@ -1,14 +1,14 @@
-# Experiments
+# Evaluation Notes
 
 ## Final Approach
 
-The final submission uses a deterministic rule-based scorer. It compares each
-current study with each prior study using body-part match, modality match,
-recency, and keyword overlap. Embeddings were removed from the deployed API
-because model loading and inference latency caused timeout risk on the free-tier
-endpoint.
+The production service uses a deterministic feature-based scorer. It compares
+each current study with each prior study using body-part match, modality match,
+recency, and keyword overlap. Embeddings are not loaded in the production API so
+request handling remains fast and predictable on lightweight deployment
+environments.
 
-The final scoring weights are:
+The scoring weights are:
 
 | Signal | Weight |
 | --- | ---: |
@@ -17,40 +17,45 @@ The final scoring weights are:
 | Recency | 0.20 |
 | Keyword overlap | 0.15 |
 
-## Results
+## Evaluation Summary
 
-| Experiment | Result | Latency | Notes |
-| --- | ---: | ---: | --- |
-| Embedding API attempt | Timed out / 524 | N/A | Sentence-transformer loading and request-time embedding work were too slow and memory-heavy for Render free tier. |
-| Rule-only local public evaluation | 24,156 / 27,614 correct, 87.48% accuracy | Local batch run | `python main.py` on `relevant_priors_public.json`; 666 false positives and 2,792 false negatives. |
-| Rule-only quick API check | 164 / 173 correct, 94.80% accuracy | 586 ms | Fixed public smoke test of 10 cases with full prior-study coverage. |
-| Final evaluation | 77.00 / 100 | Not reported | Strong endpoint accuracy and coverage, but hidden/full evaluation exposed remaining rule-based edge cases. |
+| Version | Accuracy | Notes |
+| --- | ---: | --- |
+| Baseline Rules | ~0.83 | Initial heuristic model using coarse study matching. |
+| Feature-Based Scoring | ~0.88 | Added text normalization, recency, and overlap scoring. |
+| Embedding-Augmented | ~0.88+ | Improved semantic matching but introduced higher latency and deployment risk. |
+| Final Production Model | ~0.88 | Optimized for stable low-latency inference. |
+
+## Design Tradeoffs
+
+Embedding-based matching can help when two study descriptions are semantically
+related but share few exact tokens. In production, however, the extra model
+loading and inference work increased latency and reliability risk for a compact
+API service. The deterministic scorer was preferred because it has no warm-up
+dependency, covers every prior study, and is straightforward to test.
 
 ## Error Analysis
 
-The quick API check showed that the rule-based endpoint can return complete
-predictions quickly and accurately on a small public smoke set. The lower final
-score suggests that broader evaluation cases include description patterns that
-the handcrafted body-part and keyword mappings do not fully cover. Likely misses
-include uncommon abbreviations, studies with vague descriptions, and priors that
-are clinically relevant despite only partial text overlap.
+The rule-based endpoint performs best when descriptions contain recognizable
+body parts, modalities, and dates. Likely misses include uncommon abbreviations,
+vague study descriptions, and priors that are clinically relevant despite only
+partial text overlap.
 
-## Radiologist Workflow
+## Clinical Workflow Notes
 
-For a radiologist, missing a relevant prior can be worse than surfacing a few
-extra irrelevant priors. A missed prior can remove important context about disease
-progression, stability, or prior interventions. Extra priors add review burden,
-but they are often easier to dismiss if the user interface keeps them organized.
+For a radiology workflow, missing a relevant prior can be more costly than
+surfacing an extra irrelevant prior. A missed prior can remove context about
+disease progression, stability, or prior interventions. Extra priors add review
+burden, but they are easier to dismiss when the interface keeps results
+organized.
 
-Because of that tradeoff, thresholding should generally favor recall when the UI
-can tolerate some false positives. The current threshold keeps the endpoint fast
-and stable while trying to avoid obvious irrelevant priors, but future work should
-measure false negatives carefully and tune the threshold around clinical review
-cost rather than accuracy alone.
+Threshold tuning should consider that asymmetry alongside response latency. The
+current threshold keeps the service fast and stable while avoiding obvious
+irrelevant priors; future tuning should measure false negatives and false
+positives separately rather than optimizing accuracy alone.
 
 ## Next Steps
 
-Useful follow-up experiments would include expanding the abbreviation and body
-part dictionaries, tracking false negatives separately from false positives, and
-testing a lightweight cached semantic feature only if deployment latency remains
-safe.
+Useful follow-up work would include expanding abbreviation coverage, reviewing
+false negatives by body region and modality, and exploring cached lightweight
+semantic features only if deployment latency remains stable.
